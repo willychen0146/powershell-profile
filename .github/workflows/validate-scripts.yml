@@ -1,0 +1,65 @@
+name: Validate Winget Apps Backup Scripts
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Update winget
+      run: |
+        winget upgrade --all
+
+    - name: Pre-install some apps
+      run: |
+        winget install Microsoft.PowerShell --silent
+        winget install Microsoft.VisualStudioCode --silent
+        winget install Mozilla.Firefox --silent
+      continue-on-error: true
+
+    - name: Run ExportInstalledApps.ps1
+      run: |
+        powershell -ExecutionPolicy Bypass -File ./data/ExportInstalledApps.ps1
+      
+    - name: Check if InstalledWingetApps.json was created
+      run: |
+        if (Test-Path ./data/InstalledWingetApps.json) {
+          Write-Host "InstalledWingetApps.json was successfully created."
+          Get-Content ./data/InstalledWingetApps.json
+        } else {
+          Write-Host "Error: InstalledWingetApps.json was not created."
+          exit 1
+        }
+      
+    - name: Run InstallAppsFromJson.ps1
+      run: |
+        powershell -ExecutionPolicy Bypass -File ./data/InstallAppsFromJson.ps1
+      
+    - name: Verify installed apps
+      run: |
+        $appsToInstall = Get-Content -Path "./data/InstalledWingetApps.json" | ConvertFrom-Json
+        foreach ($app in $appsToInstall) {
+          $installedApp = winget list --id $app.Id
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: $($app.Name) (ID: $($app.Id)) was not installed."
+            exit 1
+          } else {
+            Write-Host "$($app.Name) (ID: $($app.Id)) is installed."
+          }
+        }
+        Write-Host "All apps were successfully installed or updated."
+
+    - name: Display final winget list
+      run: |
+        winget list

@@ -17,6 +17,16 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     
+    - name: Ensure winget is installed
+      run: |
+        if (-not (winget)) {
+          Write-Host "Winget not found, installing..."
+          Invoke-WebRequest -Uri "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx" -OutFile "VCLibs.appx"
+          Add-AppxPackage .\VCLibs.appx
+          Invoke-WebRequest -Uri "https://aka.ms/win32-winget" -OutFile "winget.appxbundle"
+          Add-AppxPackage .\winget.appxbundle
+        }
+
     - name: Update winget
       run: |
         winget upgrade --all

@@ -26,6 +26,11 @@ jobs:
       run: |
         winget --version
 
+    - name: Accept Microsoft Store terms
+      run: |
+        echo "Y" | winget list
+      shell: cmd
+
     - name: Update winget source
       run: |
         winget source update

@@ -1,5 +1,10 @@
 # Read the JSON file
-$appsToInstall = Get-Content -Path "./data/InstalledWingetApps.json" | ConvertFrom-Json
+try {
+    $appsToInstall = Get-Content -Path "./data/InstalledWingetApps.json" | ConvertFrom-Json
+} catch {
+    Write-Host "Error reading JSON file: $_"
+    exit 1
+}
 
 # Iterate through each application
 foreach ($app in $appsToInstall) {

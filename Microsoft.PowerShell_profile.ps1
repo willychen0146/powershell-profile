@@ -261,12 +261,16 @@ function Go-Home {Set-Location -Path ~}
 Set-Alias -Name home -Value Go-Home
 function Open-Here {Invoke-Expression "explorer ."}
 Set-Alias -Name here -Value Open-Here
+function Open-RecycleBin {Invoke-Expression "explorer.exe shell:RecycleBinFolder"}
+Set-Alias -Name trash -Value Open-RecycleBin
 function Copy-Path-To-Clipboard {(pwd).Path | Set-Clipboard}
 Set-Alias -Name cpath -Value Copy-Path-To-Clipboard
 function Go-Project {Set-Location -Path "~/Documents/Project"}
 Set-Alias -Name rr -Value Go-Project
 function Go-Download {Set-Location -Path "~/Downloads"}
 Set-Alias -Name dd -Value Go-Download
+function Go-Desktop {Set-Location -Path "~/Desktop"}
+Set-Alias -Name dt -Value GO-Desktop
 
 # Enhanced PowerShell Experience
 Set-PSReadLineOption -Colors @{
@@ -299,15 +303,21 @@ Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock $scriptblock
 
 # Get theme from profile.ps1 or use a default theme
 function Get-Theme {
-    if (Test-Path -Path $PROFILE.CurrentUserAllHosts -PathType leaf) {
-        $existingTheme = Select-String -Raw -Path $PROFILE.CurrentUserAllHosts -Pattern "oh-my-posh init pwsh --config"
-        if ($null -ne $existingTheme) {
-            Invoke-Expression $existingTheme
+    # Check if the profile file exists
+    if (Test-Path -Path $PROFILE.CurrentUserAllHosts -PathType Leaf) {
+        # Look for the oh-my-posh theme initialization line
+        $existingTheme = Get-Content -Path $PROFILE.CurrentUserAllHosts | Select-String "oh-my-posh init pwsh --config"
+        
+        # If the theme configuration exists, apply it
+        if ($existingTheme) {
+            Invoke-Expression ($existingTheme -replace "`n|`r", "")
             return
         }
-    } else {
-        oh-my-posh init pwsh --config https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/cobalt2.omp.json | Invoke-Expression
     }
+
+    # If no theme initialization is found, apply the default theme
+    Write-Host "No existing theme found. Applying default theme..."
+    oh-my-posh init pwsh --config https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/cobalt2.omp.json | Invoke-Expression
 }
 Get-Theme
 

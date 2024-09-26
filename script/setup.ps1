@@ -11,6 +11,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 function Test-InternetConnection {
     try {
         $testConnection = Test-Connection -ComputerName www.google.com -Count 1 -ErrorAction Stop
+        Write-Host "Internet connection is available."
         return $true
     }
     catch {
@@ -52,6 +53,7 @@ function Install-NerdFonts {
 
             Remove-Item -Path $extractPath -Recurse -Force
             Remove-Item -Path $zipFilePath -Force
+            Write-Host "Font ${FontDisplayName} installed successfully"
         } else {
             Write-Host "Font ${FontDisplayName} already installed"
         }
@@ -94,9 +96,15 @@ if (!(Test-Path -Path $PROFILE -PathType Leaf)) {
 }
 else {
     try {
-        Get-Item -Path $PROFILE | Move-Item -Destination "oldprofile.ps1" -Force
+        # Get the directory where the profile is located
+        $profileDir = Split-Path -Path $PROFILE
+
+        # Backup the old profile by renaming it and moving it to the same directory
+        Move-Item -Path $PROFILE -Destination "$profileDir\oldprofile.ps1" -Force
+
+        # Download the profile from GitHub
         Invoke-RestMethod https://github.com/willychen0146/powershell-profile/raw/main/Microsoft.PowerShell_profile.ps1 -OutFile $PROFILE
-        Write-Host "The profile @ [$PROFILE] has been created and old profile removed."
+        Write-Host "The profile @ [$PROFILE] has been created and old profile backed up as oldprofile.ps1."
     }
     catch {
         Write-Error "Failed to backup and update the profile. Error: $_"
@@ -109,6 +117,7 @@ Install-NerdFonts -FontName "JetBrainsMono" -FontDisplayName "JetBrainsMono NF"
 # Oh My Posh Install
 try {
     winget install -e --accept-source-agreements --accept-package-agreements JanDeDobbeleer.OhMyPosh
+    Write-Host "Oh My Posh installed successfully."
 }
 catch {
     Write-Error "Failed to install Oh My Posh. Error: $_"
@@ -126,6 +135,7 @@ if ((Test-Path -Path $PROFILE) -and ($fontFamilies -contains "JetBrainsMono NF")
 # Choco install
 try {
     Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    Write-Host "Chocolatey installed successfully."
 }
 catch {
     Write-Error "Failed to install Chocolatey. Error: $_"
@@ -134,6 +144,7 @@ catch {
 # Terminal Icons Install
 try {
     Install-Module -Name Terminal-Icons -Repository PSGallery -Force
+    Write-Host "Terminal Icons module installed successfully."
 }
 catch {
     Write-Error "Failed to install Terminal Icons module. Error: $_"

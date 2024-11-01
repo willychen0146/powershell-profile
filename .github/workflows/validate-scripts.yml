@@ -26,20 +26,15 @@ jobs:
       run: |
         winget --version
 
-    - name: Accept Microsoft Store terms
-      run: |
-        echo "Y" | winget list
-      shell: cmd
-
     - name: Update winget source
       run: |
-        winget source update
+        winget source update --accept-source-agreements
 
     - name: Pre-install some apps
       run: |
-        winget install Microsoft.PowerShell --silent
-        winget install Microsoft.VisualStudioCode --silent
-        winget install Mozilla.Firefox --silent
+        winget install Microsoft.PowerShell --silent --accept-source-agreements --accept-package-agreements
+        winget install Microsoft.VisualStudioCode --silent --accept-source-agreements --accept-package-agreements
+        winget install Mozilla.Firefox --silent --accept-source-agreements --accept-package-agreements
       continue-on-error: true
 
     - name: Run ExportInstalledApps.ps1
@@ -76,4 +71,4 @@ jobs:
 
     - name: Display final winget list
       run: |
-        winget list
+        winget list --accept-source-agreements

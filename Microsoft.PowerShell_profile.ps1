@@ -144,7 +144,7 @@ function reload-profile {
     & $profile
 }
 
-# Find files recursively
+# Extract a zip file
 function unzip ($file) {
     Write-Output("Extracting", $file, "to", $pwd)
     $fullFile = Get-ChildItem -Path $pwd -Filter $file | ForEach-Object { $_.FullName }
@@ -226,6 +226,39 @@ function k9 { Stop-Process -Name $args[0] }
 function la { Get-ChildItem -Path . -Force | Format-Table -AutoSize }
 function ll { Get-ChildItem -Path . -Force -Hidden | Format-Table -AutoSize }
 
+# System Management
+function diskspace {
+    Get-WmiObject Win32_LogicalDisk | Select-Object DeviceID, @{n='Size(GB)';e={[math]::Round($_.Size/1GB,2)}}, @{n='FreeSpace(GB)';e={[math]::Round($_.FreeSpace/1GB,2)}}
+}
+function ram {
+    Get-WmiObject Win32_OperatingSystem | Select-Object @{n='TotalMemory(GB)';e={[math]::Round($_.TotalVisibleMemorySize/1MB,2)}}, @{n='FreeMemory(GB)';e={[math]::Round($_.FreePhysicalMemory/1MB,2)}}
+}
+
+# npm Utilities
+function npm-clean {
+    Remove-Item -Recurse -Force node_modules
+    Remove-Item package-lock.json
+    npm cache clean --force
+    npm install
+}
+
+# File Operations
+function backup {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$source,
+        [string]$dest = "$(Get-Date -Format 'yyyy-MM-dd')_backup"
+    )
+    Copy-Item -Path $source -Destination $dest -Recurse
+}
+function compress {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$path
+    )
+    Compress-Archive -Path $path -DestinationPath "$path.zip"
+}
+
 ### Git Shortcuts
 function gs { git status }
 function ga { git add . }
@@ -242,6 +275,10 @@ function lazyg {
     git commit -m "$args"
     git push
 }
+function glog { git log --oneline --graph --decorate }
+function gbr { git branch }
+function gch { param([string]$branch) git checkout $branch }
+function gpl { git pull }
 
 # Quick Access to System Information
 function sysinfo { Get-ComputerInfo }
@@ -257,20 +294,23 @@ function cpy { Set-Clipboard $args[0] }
 function pst { Get-Clipboard }
 
 ### Other Utilities
-function Go-Home {Set-Location -Path ~}
-Set-Alias -Name home -Value Go-Home
+function .. { Set-Location .. }
+function ... { Set-Location ..\.. }
+function .... { Set-Location ..\..\.. }
+function Open-Home {Set-Location -Path ~}
+Set-Alias -Name home -Value Open-Home
 function Open-Here {Invoke-Expression "explorer ."}
 Set-Alias -Name here -Value Open-Here
 function Open-RecycleBin {Invoke-Expression "explorer.exe shell:RecycleBinFolder"}
 Set-Alias -Name trash -Value Open-RecycleBin
 function Copy-Path-To-Clipboard {(pwd).Path | Set-Clipboard}
 Set-Alias -Name cpath -Value Copy-Path-To-Clipboard
-function Go-Project {Set-Location -Path "~/Documents/Project"}
-Set-Alias -Name rr -Value Go-Project
-function Go-Download {Set-Location -Path "~/Downloads"}
-Set-Alias -Name dd -Value Go-Download
-function Go-Desktop {Set-Location -Path "~/Desktop"}
-Set-Alias -Name dt -Value GO-Desktop
+function Open-Project {Set-Location -Path "~/Documents/Project"}
+Set-Alias -Name rr -Value Open-Project
+function Open-Download {Set-Location -Path "~/Downloads"}
+Set-Alias -Name dd -Value Open-Download
+function Open-Desktop {Set-Location -Path "~/Desktop"}
+Set-Alias -Name dt -Value Open-Desktop
 
 # Enhanced PowerShell Experience
 Set-PSReadLineOption -Colors @{
@@ -350,6 +390,8 @@ Update-PowerShell - Checks for the latest PowerShell release and updates if a ne
 
 Edit-Profile - Opens the current user's profile for editing using the configured editor.
 
+su - Opens a new elevated PowerShell window.
+
 touch <file> - Creates a new empty file.
 
 ff <name> - Finds files recursively with the specified name.
@@ -384,6 +426,8 @@ nf <name> - Creates a new file with the specified name.
 
 mkcd <dir> - Creates and changes to a new directory.
 
+mkdir <dir> - Creates a new directory.
+
 docs - Changes the current directory to the user's Documents folder.
 
 dtop - Changes the current directory to the user's Desktop folder.
@@ -395,6 +439,16 @@ k9 <name> - Kills a process by name.
 la - Lists all files in the current directory with detailed formatting.
 
 ll - Lists all files, including hidden, in the current directory with detailed formatting.
+
+diskspace - Show disk space usage.
+
+ram - Show RAM usage.
+
+npm-clean - Clean and reinstall npm packages.
+
+backup <source> [dest] - Create backup of files/folders.
+
+compress <path> - Compress folder/file to zip.
 
 gs - Shortcut for 'git status'.
 
@@ -409,6 +463,14 @@ g - Changes to the GitHub directory.
 gcom <message> - Adds all changes and commits with the specified message.
 
 lazyg <message> - Adds all changes, commits with the specified message, and pushes to the remote repository.
+
+glog - Displays a graph of the commit history.
+
+gbr - Lists all branches.
+
+gch <branch> - Changes to the specified branch.
+
+gpl - Pulls changes from the remote repository.
 
 sysinfo - Displays detailed system information.
 

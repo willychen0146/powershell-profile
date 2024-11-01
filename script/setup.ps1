@@ -63,6 +63,64 @@ function Install-NerdFonts {
     }
 }
 
+# Function to check if Neovim is installed
+function Test-NeovimInstalled {
+    try {
+        $nvimPath = Get-Command nvim -ErrorAction Stop
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+# Function to check if git is installed
+function Test-GitInstalled {
+    try {
+        $gitPath = Get-Command git -ErrorAction Stop
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+# Function to install NvChad
+function Install-NvChad {
+    try {
+        # Backup existing Neovim config if it exists
+        $nvimConfigPath = "$env:LOCALAPPDATA\nvim"
+        $nvimDataPath = "$env:LOCALAPPDATA\nvim-data"
+        
+        if (Test-Path $nvimConfigPath) {
+            $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+            Rename-Item -Path $nvimConfigPath -NewName "nvim.backup.$timestamp" -Force
+            Write-Host "Existing Neovim configuration backed up."
+        }
+        
+        if (Test-Path $nvimDataPath) {
+            $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+            Rename-Item -Path $nvimDataPath -NewName "nvim-data.backup.$timestamp" -Force
+            Write-Host "Existing Neovim data backed up."
+        }
+
+        # Clone NvChad starter repository using the official command
+        Write-Host "NvChad starter repository cloning, and Neovim will be launched to complete the setup, please wait..."
+        git clone https://github.com/NvChad/starter $ENV:USERPROFILE\AppData\Local\nvim && nvim
+        Write-Host "NvChad installed successfully."
+    }
+    catch {
+        Write-Error "Failed to install NvChad. Error: $_"
+        
+        # Attempt to restore backup if installation fails
+        if (Test-Path "$nvimConfigPath.backup.$timestamp") {
+            Remove-Item -Path $nvimConfigPath -Force -Recurse -ErrorAction SilentlyContinue
+            Rename-Item -Path "$nvimConfigPath.backup.$timestamp" -NewName "nvim" -Force
+            Write-Host "Restored previous Neovim configuration from backup."
+        }
+    }
+}
+
 # Check for internet connectivity before proceeding
 if (-not (Test-InternetConnection)) {
     break
@@ -123,13 +181,6 @@ catch {
     Write-Error "Failed to install Oh My Posh. Error: $_"
 }
 
-# Final check and message to the user
-if ((Test-Path -Path $PROFILE) -and ($fontFamilies -contains "JetBrainsMono NF")) {
-    Write-Host "Setup completed successfully. Please restart your PowerShell session to apply changes."
-} else {
-    Write-Warning "Setup completed with errors. Please check the error messages above."
-}
-
 ### Install the useful tools
 
 # Choco install
@@ -156,4 +207,46 @@ try {
 }
 catch {
     Write-Error "Failed to install zoxide. Error: $_"
+}
+
+# Install Git if not present
+if (-not (Test-GitInstalled)) {
+    try {
+        winget install -e --accept-source-agreements --accept-package-agreements Git.Git
+        # Refresh environment variables after Git installation
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        Write-Host "Git installed successfully."
+    }
+    catch {
+        Write-Error "Failed to install Git. Error: $_"
+        break
+    }
+}
+
+# Install Neovim if not present
+if (-not (Test-NeovimInstalled)) {
+    try {
+        winget install -e --accept-source-agreements --accept-package-agreements Neovim.Neovim
+        # Refresh environment variables after Neovim installation
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        Write-Host "Neovim installed successfully."
+    }
+    catch {
+        Write-Error "Failed to install Neovim. Error: $_"
+        break
+    }
+}
+
+# Install NvChad if Neovim is installed
+if (Test-NeovimInstalled) {
+    Install-NvChad
+}
+
+# Final check and message to the user
+# if ((Test-Path -Path $PROFILE) -and ($fontFamilies -contains "JetBrainsMono NF")) {
+if ((Test-Path -Path $PROFILE) -and ($fontFamilies -contains "JetBrainsMono NF") -and (Test-NeovimInstalled)) {
+    Write-Host "Setup completed successfully. Please restart your PowerShell session to apply changes."
+    Write-Host "NvChad has been installed. Launch Neovim to complete the setup."
+} else {
+    Write-Warning "Setup completed with errors. Please check the error messages above."
 }
